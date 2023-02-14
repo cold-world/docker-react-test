@@ -1,0 +1,29 @@
+image: docker:latest
+
+services:
+  - docker:dind
+
+variables:
+  DOCKER_DRIVER: overlay
+
+before_script:
+  - docker build -t lifeispain/react-test -f ./client/Dockerfile.dev ./client
+
+test:
+  stage: test
+  script:
+    - docker run -e CI=true lifeispain/react-test npm test
+
+build:
+  stage: build
+  script:
+    - docker build -t lifeispain/multi-client ./client
+    - docker build -t lifeispain/multi-nginx ./nginx
+    - docker build -t lifeispain/multi-server ./server
+    - docker build -t lifeispain/multi-worker ./worker
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+    - docker push lifeispain/multi-client
+    - docker push lifeispain/multi-nginx
+    - docker push lifeispain/multi-server
+    - docker push lifeispain/multi-worker
+
